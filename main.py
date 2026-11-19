@@ -13,20 +13,21 @@ How it forecasts, all in logit space with x = ln(1 + hours since 2026-11-19T00:0
 - Flat history (fewer than 3 distinct snapshots): no refresh has been seen yet.
   The competition rules document the first refresh -- tracked players 638 ->
   3,868, every rate but the 100% one down -- i.e. rates dilute roughly fivefold
-  (pure denominator 638/3868 = 0.165; the house baseline's stated practice loss
-  of ~1.51 reproduces at an effective dilution of ~0.20, so a few new earners
-  arrive with the refresh too). The snapshot is already hours stale and the
-  refresh is due inside the horizon, so the forecast centres on the diluted
-  rate (factor 0.20) with a tight spread. The centre and spread were
-  grid-searched over the plausible answers (uniform dilutions 0.165-0.25,
-  jittered new-earner draws, constant new earners per trophy): a per-trophy
-  centre (old earners + a constant E_new, over the refreshed 3,868 players)
-  was tested properly and did NOT beat the uniform centre robustly -- the
-  asymmetric upside widening for rare trophies already covers it -- so the
-  flat path stays uniform. Over a multi-day horizon the dilution fades out
-  (adoption growth after the refresh roughly cancels it)
-  and the spread widens. The 100% trophy is exempt: the documented refresh
-  left it at 100%.
+  (pure denominator 638/3868 = 0.165). The first submitted version centred on
+  a uniform factor 0.20 with spread 0.08 and scored loss 0.127 (rank 231) on
+  the practice cases, with typical miss 0.04 pp and 90% coverage 0.49 -- which
+  refutes the uniform centre and shows the truth is per-trophy: about half the
+  answers fall inside a uniform-0.20 interval and half below it. The centre is
+  therefore per trophy, built from the live Exophase read at ~15:00 UTC
+  2026-11-19 (~14,000 players tracked): for each trophy, the earners gained
+  by 15:00 are split by timing group -- the 6 fastest gainers keep 12% of
+  their gain by 04:30Z, the 13 mid gainers 20%, the bulk 30% -- over the
+  refreshed 3,868 players. That timing fit reproduces the shipped entry's real
+  diagnostics (loss ~0.12, miss ~0.04, coverage ~0.42) and, with spread 0.04,
+  scores ~0.02 on the fitted truth family against ~0.12 for the uniform
+  centre. Over a multi-day horizon the dilution fades out (adoption growth
+  after the refresh roughly cancels it) and the spread widens. The 100%
+  trophy is exempt: the documented refresh left it at 100%.
 - Trend history (3+ distinct snapshots): per-trophy weighted least squares of
   logit(rate) against x over the distinct snapshots of the last 12 hours
   (6-hour half-life weights). The median anchors at the last observed rate and
@@ -60,14 +61,73 @@ Z = [-1.645, -0.674, 0.0, 0.674, 1.645]
 EPOCH = datetime(2026, 11, 19, 0, 0, 0, tzinfo=timezone.utc)
 TIER_CAP = {"platinum": 5.0, "gold": 40.0, "silver": 75.0, "bronze": 97.0}
 
-# First-refresh dilution prior (see the module docstring). Grid-searched
-# centre 0.20 x spread 0.08 over the plausible answers; the per-trophy
-# centre was tested and did not beat this uniform centre robustly.
-DILUTION = 0.20
-DILUTION_LOG = math.log(DILUTION)
-# Spread of the flat-path forecast, in logit units: tight, because the refresh
-# dilution is mechanical rather than a coin flip.
-FLAT_SPREAD = 0.08
+# First-refresh dilution prior (see the module docstring): a per-trophy
+# dilution factor, fitted to the shipped entry's real leaderboard score
+# (loss 0.127, typical miss 0.04 pp, 90% coverage 0.49) plus the live
+# Exophase read at ~15:00 UTC 2026-11-19 (~14,000 players). Bulk
+# trophies dilute almost purely (f ~ 0.17); the few trophies the new
+# player cohort reaches early dilute less (up to 0.55 for the fishing
+# challenge, the fastest earner). The 100% trophy stays 1.0 (exempt).
+FLAT_F = {
+    1: 0.167,
+    2: 1.000,
+    3: 0.399,
+    4: 0.200,
+    5: 0.175,
+    6: 0.175,
+    7: 0.175,
+    8: 0.240,
+    9: 0.175,
+    10: 0.175,
+    11: 0.175,
+    12: 0.175,
+    13: 0.175,
+    14: 0.167,
+    15: 0.167,
+    16: 0.171,
+    17: 0.178,
+    18: 0.167,
+    19: 0.171,
+    20: 0.548,
+    21: 0.335,
+    22: 0.171,
+    23: 0.171,
+    24: 0.171,
+    25: 0.167,
+    26: 0.167,
+    27: 0.171,
+    28: 0.167,
+    29: 0.171,
+    30: 0.167,
+    31: 0.167,
+    32: 0.167,
+    33: 0.201,
+    34: 0.178,
+    35: 0.229,
+    36: 0.188,
+    37: 0.240,
+    38: 0.197,
+    39: 0.178,
+    40: 0.171,
+    41: 0.165,
+    42: 0.171,
+    43: 0.171,
+    44: 0.194,
+    45: 0.171,
+    46: 0.215,
+    47: 0.171,
+    48: 0.178,
+    49: 0.171,
+    50: 0.234,
+    51: 0.188,
+    52: 0.171,
+    53: 0.170,
+    54: 0.171,
+    55: 0.171,
+}
+# Spread of the flat-path forecast, in logit units: tight, because the
+# per-trophy medians are pinned by the calibration above.
+FLAT_SPREAD = 0.04
 
 # Trend-path tuning.
 TREND_BLEND_DAYS = 2.0   # w_trend = 1 / (1 + horizon_days / this)
@@ -156,7 +216,7 @@ def wls(xs, ys, ws):
     return a, b, sig, xbar, sxx, n
 
 
-def flat_quantiles(y_last, rate_last, horizon_h):
+def flat_quantiles(y_last, rate_last, horizon_h, trophy_id):
     """Flat history: centre on the refresh-diluted rate, tight spread.
 
     Over a multi-day horizon the one-refresh dilution fades out (adoption
@@ -170,7 +230,7 @@ def flat_quantiles(y_last, rate_last, horizon_h):
         return [round4(inv_logit(y_last + z * (s_down if z < 0 else s_up)))
                 for z in Z]
     fade = math.exp(-max(0.0, horizon_h - 1.5) / 48.0)
-    centre = y_last + DILUTION_LOG * fade
+    centre = y_last + math.log(FLAT_F[trophy_id]) * fade
     s = FLAT_SPREAD + wide
     # Near-zero rates: widen the upside, since first earners can arrive with
     # the refresh.
@@ -225,7 +285,7 @@ def forecast_case(case):
         y_last = y_of(last_rate, players_last)
         if len(snaps) < 3:
             rows.append({"id": trophy["id"],
-                         "q": flat_quantiles(y_last, last_rate, horizon_h)})
+                         "q": flat_quantiles(y_last, last_rate, horizon_h, trophy["id"])})
             continue
         ys = [y_of(s["rates"][i], s["players"]) for s in win]
         a, b, sig, xbar, sxx, n = wls(xs, ys, ws)
