@@ -32,7 +32,15 @@ How it forecasts, all in logit space with x = ln(1 + hours since 2026-11-19T00:0
   (p00 truth / sqrt(1.2)), spread 0.10 symmetric -- the old upside
   widening is removed for the flat path (see flat_quantiles). It scores
   ~0.052 on the re-fitted family against ~0.069 for R1/R3, and ~0.049 on
-  the best-fit truth against R1's 0.066 there. The 100% trophy is exempt:
+  the best-fit truth against R1's 0.066 there. Independent verification
+  (second pass, 2026-11-20): the scorer reproduces this row exactly --
+  loss 0.0487, typical miss 0.018 pp, coverage 54/110 on the best-fit
+  truth, against R1 0.0658/0.023/34 and R3 0.0697/0.031/48 -- and the
+  entry runs in ~0.05-0.09 s for both cases (limit 8 s/case),
+  deterministic across runs, p00 output identical to p01. The trend
+  path is byte-identical to R3 (verified by diff: only the docstring,
+  FLAT_F, FLAT_SPREAD and the flat-path s_up line changed), so the
+  7-day final is unchanged by this revision. The 100% trophy is exempt:
   the documented refresh left it at 100%.
 - Trend history (3+ distinct snapshots): per-trophy weighted least squares of
   logit(rate) against x over the distinct snapshots of the last 12 hours
