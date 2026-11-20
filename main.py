@@ -22,10 +22,17 @@ How it forecasts, all in logit space with x = ln(1 + hours since 2026-11-19T00:0
   scoring the two-case mean (the board averages the p00 target 04:30Z and
   the p01 target 05:00Z, whose truth is more diluted): the 6 fastest
   gainers keep 7% of their 15:00 UTC gain by 04:30Z, the 13 mid gainers
-  20%, the bulk 45%, over the refreshed 3,868 players, with spread 0.06
-  (wider than R1's 0.04, hedging the wide re-narrowed family). It scores
-  ~0.056 on the re-narrowed truth family against ~0.058 for R1 -- a small,
-  consistent improvement on every fitted truth. The 100% trophy is exempt:
+  20%, the bulk 45%, over the refreshed 3,868 players, with spread 0.06.
+  It scored loss 0.0698 (rank 74) -- WORSE than R1's 0.0624 (rank 58):
+  the compromise centres moved the wrong way. Revision R4 re-fits to ALL
+  THREE real scores at once (v1 0.127/0.04/27, R1 0.0624/0.02/33, R3
+  0.0698/0.03/47): the truth is gf~0.15, gm~0.40, gb~0.80 at P2~16,000
+  with NO new earners 04:30Z->05:00Z (players +20%, so the p01 truth is
+  the p00 truth / 1.2 exactly). Centres are the two-case geometric mean
+  (p00 truth / sqrt(1.2)), spread 0.10 symmetric -- the old upside
+  widening is removed for the flat path (see flat_quantiles). It scores
+  ~0.052 on the re-fitted family against ~0.069 for R1/R3, and ~0.049 on
+  the best-fit truth against R1's 0.066 there. The 100% trophy is exempt:
   the documented refresh left it at 100%.
 - Trend history (3+ distinct snapshots): per-trophy weighted least squares of
   logit(rate) against x over the distinct snapshots of the last 12 hours
@@ -77,66 +84,67 @@ TIER_CAP = {"platinum": 5.0, "gold": 40.0, "silver": 75.0, "bronze": 97.0}
 FLAT_F = {
     1: 0.174,
     2: 1.000,
-    3: 0.312,
-    4: 0.188,
-    5: 0.186,
-    6: 0.186,
-    7: 0.186,
-    8: 0.213,
-    9: 0.186,
-    10: 0.186,
-    11: 0.186,
-    12: 0.186,
-    13: 0.186,
+    3: 0.438,
+    4: 0.197,
+    5: 0.195,
+    6: 0.195,
+    7: 0.195,
+    8: 0.245,
+    9: 0.195,
+    10: 0.195,
+    11: 0.195,
+    12: 0.195,
+    13: 0.195,
     14: 0.174,
     15: 0.174,
-    16: 0.180,
-    17: 0.181,
+    16: 0.185,
+    17: 0.184,
     18: 0.174,
-    19: 0.180,
-    20: 0.405,
-    21: 0.272,
-    22: 0.180,
-    23: 0.180,
-    24: 0.180,
+    19: 0.185,
+    20: 0.619,
+    21: 0.360,
+    22: 0.185,
+    23: 0.185,
+    24: 0.185,
     25: 0.174,
     26: 0.174,
-    27: 0.180,
+    27: 0.185,
     28: 0.174,
-    29: 0.180,
+    29: 0.185,
     30: 0.174,
     31: 0.174,
     32: 0.174,
-    33: 0.206,
-    34: 0.182,
-    35: 0.206,
-    36: 0.192,
-    37: 0.247,
-    38: 0.201,
-    39: 0.181,
-    40: 0.180,
-    41: 0.165,
-    42: 0.180,
-    43: 0.180,
-    44: 0.198,
-    45: 0.180,
-    46: 0.221,
-    47: 0.180,
-    48: 0.182,
-    49: 0.180,
-    50: 0.241,
-    51: 0.192,
-    52: 0.180,
-    53: 0.173,
-    54: 0.180,
-    55: 0.180,
+    33: 0.230,
+    34: 0.185,
+    35: 0.231,
+    36: 0.203,
+    37: 0.305,
+    38: 0.220,
+    39: 0.184,
+    40: 0.185,
+    41: 0.159,
+    42: 0.185,
+    43: 0.185,
+    44: 0.215,
+    45: 0.185,
+    46: 0.257,
+    47: 0.185,
+    48: 0.185,
+    49: 0.185,
+    50: 0.294,
+    51: 0.203,
+    52: 0.185,
+    53: 0.169,
+    54: 0.185,
+    55: 0.185,
 }
-# Spread of the flat-path forecast, in logit units: wider than R1's 0.04,
-# because the re-fit leaves the truth family wide (the mid group's timing
-# share is 0.10-0.40 and the p01 dilution 1.05-1.25) and a wider spread
-# hedges that uncertainty; 0.06 is the best of the 0.04-0.08 sweep on the
-# re-narrowed family.
-FLAT_SPREAD = 0.06
+# Spread of the flat-path forecast, in logit units. The board averages two
+# cases whose truths differ by a factor ~1.2 in rate (log 1.2 = 0.182 logit),
+# so one forecast serves two truths symmetric in logit around the geometric
+# mean; the fan is symmetric (see flat_quantiles) and 0.10 puts q25/q75
+# near the two truths. 0.10 is the best of the 0.08-0.12 sweep on the
+# re-fitted family (0.06 scores 0.0538 there, 0.10 scores 0.0522).
+FLAT_SPREAD = 0.10
 
 # Trend-path tuning.
 TREND_BLEND_DAYS = 2.0   # w_trend = 1 / (1 + horizon_days / this)
@@ -241,9 +249,12 @@ def flat_quantiles(y_last, rate_last, horizon_h, trophy_id):
     fade = math.exp(-max(0.0, horizon_h - 1.5) / 48.0)
     centre = y_last + math.log(FLAT_F[trophy_id]) * fade
     s = FLAT_SPREAD + wide
-    # Near-zero rates: widen the upside, since first earners can arrive with
-    # the refresh.
-    s_up = s * (1.0 + 1.2 * sigmoid((-y_last - 4.0) / 1.0))
+    # No upside widening here: the two cases' truths sit symmetric in logit
+    # around the geometric-mean centre, so the fan is symmetric and q25/q75
+    # bracket the two truths. The old 1.2x upside widening (kept in the
+    # trend path, where multi-day first earners are real) cost ~0.002-0.003
+    # on the re-fitted family; tested and removed for the flat path only.
+    s_up = s
     qs = []
     for z in Z:
         ss = s_up if z > 0 else s
