@@ -255,7 +255,8 @@ def flat_quantiles(y_last, rate_last, horizon_h, trophy_id):
         return [round4(inv_logit(y_last + z * (s_down if z < 0 else s_up)))
                 for z in Z]
     fade = math.exp(-max(0.0, horizon_h - 1.5) / 48.0)
-    centre = y_last + math.log(FLAT_F[trophy_id]) * fade
+    factor = FLAT_F.get(trophy_id, 0.185)
+    centre = y_last + math.log(factor) * fade
     s = FLAT_SPREAD + wide
     # No upside widening here: the two cases' truths sit symmetric in logit
     # around the geometric-mean centre, so the fan is symmetric and q25/q75
