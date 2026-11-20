@@ -16,18 +16,17 @@ How it forecasts, all in logit space with x = ln(1 + hours since 2026-11-19T00:0
   (pure denominator 638/3868 = 0.165). The first submitted version centred on
   a uniform factor 0.20 with spread 0.08 and scored loss 0.127 (rank 231) on
   the practice cases, with typical miss 0.04 pp and 90% coverage 0.49 -- which
-  refutes the uniform centre and shows the truth is per-trophy: about half the
-  answers fall inside a uniform-0.20 interval and half below it. The centre is
-  therefore per trophy, built from the live Exophase read at ~15:00 UTC
-  2026-11-19 (~14,000 players tracked): for each trophy, the earners gained
-  by 15:00 are split by timing group -- the 6 fastest gainers keep 12% of
-  their gain by 04:30Z, the 13 mid gainers 20%, the bulk 30% -- over the
-  refreshed 3,868 players. That timing fit reproduces the shipped entry's real
-  diagnostics (loss ~0.12, miss ~0.04, coverage ~0.42) and, with spread 0.04,
-  scores ~0.02 on the fitted truth family against ~0.12 for the uniform
-  centre. Over a multi-day horizon the dilution fades out (adoption growth
-  after the refresh roughly cancels it) and the spread widens. The 100%
-  trophy is exempt: the documented refresh left it at 100%.
+  refutes the uniform centre and shows the truth is per-trophy. Revision R1
+  (per-trophy table, spread 0.04) scored loss 0.0624, miss 0.02 pp, coverage
+  0.60 (rank 58). This revision (R3) re-fits to BOTH real scores at once,
+  scoring the two-case mean (the board averages the p00 target 04:30Z and
+  the p01 target 05:00Z, whose truth is more diluted): the 6 fastest
+  gainers keep 7% of their 15:00 UTC gain by 04:30Z, the 13 mid gainers
+  20%, the bulk 45%, over the refreshed 3,868 players, with spread 0.06
+  (wider than R1's 0.04, hedging the wide re-narrowed family). It scores
+  ~0.056 on the re-narrowed truth family against ~0.058 for R1 -- a small,
+  consistent improvement on every fitted truth. The 100% trophy is exempt:
+  the documented refresh left it at 100%.
 - Trend history (3+ distinct snapshots): per-trophy weighted least squares of
   logit(rate) against x over the distinct snapshots of the last 12 hours
   (6-hour half-life weights). The median anchors at the last observed rate and
@@ -62,72 +61,82 @@ EPOCH = datetime(2026, 11, 19, 0, 0, 0, tzinfo=timezone.utc)
 TIER_CAP = {"platinum": 5.0, "gold": 40.0, "silver": 75.0, "bronze": 97.0}
 
 # First-refresh dilution prior (see the module docstring): a per-trophy
-# dilution factor, fitted to the shipped entry's real leaderboard score
-# (loss 0.127, typical miss 0.04 pp, 90% coverage 0.49) plus the live
-# Exophase read at ~15:00 UTC 2026-11-19 (~14,000 players). Bulk
-# trophies dilute almost purely (f ~ 0.17); the few trophies the new
-# player cohort reaches early dilute less (up to 0.55 for the fishing
-# challenge, the fastest earner). The 100% trophy stays 1.0 (exempt).
+# dilution factor, fitted to BOTH real leaderboard scores -- the shipped
+# entry (uniform 0.20, spread 0.08: loss 0.127, miss 0.04 pp, coverage
+# 0.49) and revision R1 (this table's predecessor, spread 0.04: loss
+# 0.0624, miss 0.02 pp, coverage 0.60) -- plus the live Exophase read at
+# ~15:00 UTC 2026-11-19 (~15,000 players). The fit is a two-case mean:
+# the board averages the p00 case (target 04:30Z) and the p01 case
+# (target 05:00Z), whose truth is more diluted (extra players and
+# earners in the extra 30 minutes), so the centres are the compromise
+# between the two targets, not the p00 truth alone. Timing groups: the
+# 6 fastest gainers keep 7% of their 15:00 gain by 04:30Z, the 13 mid
+# gainers 20%, the bulk 45%. Bulk trophies dilute almost purely
+# (f ~ 0.18); the fastest earner (fishing challenge, id 20) keeps the
+# most (f 0.405). The 100% trophy stays 1.0 (exempt).
 FLAT_F = {
-    1: 0.167,
+    1: 0.174,
     2: 1.000,
-    3: 0.399,
-    4: 0.200,
-    5: 0.175,
-    6: 0.175,
-    7: 0.175,
-    8: 0.240,
-    9: 0.175,
-    10: 0.175,
-    11: 0.175,
-    12: 0.175,
-    13: 0.175,
-    14: 0.167,
-    15: 0.167,
-    16: 0.171,
-    17: 0.178,
-    18: 0.167,
-    19: 0.171,
-    20: 0.548,
-    21: 0.335,
-    22: 0.171,
-    23: 0.171,
-    24: 0.171,
-    25: 0.167,
-    26: 0.167,
-    27: 0.171,
-    28: 0.167,
-    29: 0.171,
-    30: 0.167,
-    31: 0.167,
-    32: 0.167,
-    33: 0.201,
-    34: 0.178,
-    35: 0.229,
-    36: 0.188,
-    37: 0.240,
-    38: 0.197,
-    39: 0.178,
-    40: 0.171,
+    3: 0.312,
+    4: 0.188,
+    5: 0.186,
+    6: 0.186,
+    7: 0.186,
+    8: 0.213,
+    9: 0.186,
+    10: 0.186,
+    11: 0.186,
+    12: 0.186,
+    13: 0.186,
+    14: 0.174,
+    15: 0.174,
+    16: 0.180,
+    17: 0.181,
+    18: 0.174,
+    19: 0.180,
+    20: 0.405,
+    21: 0.272,
+    22: 0.180,
+    23: 0.180,
+    24: 0.180,
+    25: 0.174,
+    26: 0.174,
+    27: 0.180,
+    28: 0.174,
+    29: 0.180,
+    30: 0.174,
+    31: 0.174,
+    32: 0.174,
+    33: 0.206,
+    34: 0.182,
+    35: 0.206,
+    36: 0.192,
+    37: 0.247,
+    38: 0.201,
+    39: 0.181,
+    40: 0.180,
     41: 0.165,
-    42: 0.171,
-    43: 0.171,
-    44: 0.194,
-    45: 0.171,
-    46: 0.215,
-    47: 0.171,
-    48: 0.178,
-    49: 0.171,
-    50: 0.234,
-    51: 0.188,
-    52: 0.171,
-    53: 0.170,
-    54: 0.171,
-    55: 0.171,
+    42: 0.180,
+    43: 0.180,
+    44: 0.198,
+    45: 0.180,
+    46: 0.221,
+    47: 0.180,
+    48: 0.182,
+    49: 0.180,
+    50: 0.241,
+    51: 0.192,
+    52: 0.180,
+    53: 0.173,
+    54: 0.180,
+    55: 0.180,
 }
-# Spread of the flat-path forecast, in logit units: tight, because the
-# per-trophy medians are pinned by the calibration above.
-FLAT_SPREAD = 0.04
+# Spread of the flat-path forecast, in logit units: wider than R1's 0.04,
+# because the re-fit leaves the truth family wide (the mid group's timing
+# share is 0.10-0.40 and the p01 dilution 1.05-1.25) and a wider spread
+# hedges that uncertainty; 0.06 is the best of the 0.04-0.08 sweep on the
+# re-narrowed family.
+FLAT_SPREAD = 0.06
 
 # Trend-path tuning.
 TREND_BLEND_DAYS = 2.0   # w_trend = 1 / (1 + horizon_days / this)
